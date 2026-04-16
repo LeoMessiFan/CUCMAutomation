@@ -1,0 +1,10 @@
+flask>=2.3
+flask-login>=0.6
+flask-sqlalchemy>=3.0
+bcrypt>=4.0
+zeep>=4.2
+requests>=2.31
+lxml>=4.9
+urllib3>=2.0
+python-dotenv>=1.0
+gunicorn>=21.0
