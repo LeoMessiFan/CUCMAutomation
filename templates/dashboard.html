@@ -224,6 +224,23 @@
                    h-40 overflow-y-auto whitespace-pre-wrap leading-relaxed border border-border">
           </div>
         </div>
+
+        <div id="aiDiagnosisPanel" class="hidden mt-4 border border-border rounded-lg bg-surface p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-mono text-slate-600 uppercase">AI Diagnosis</span>
+            <span id="aiSeverityBadge" class="diagnosis-badge severity-error">ERROR</span>
+          </div>
+          <div class="space-y-3 text-sm">
+            <div>
+              <p class="text-xs font-mono text-slate-600 uppercase mb-1">Likely Cause</p>
+              <p id="aiCause" class="text-slate-300 leading-relaxed"></p>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-slate-600 uppercase mb-1">Suggested Fix</p>
+              <p id="aiSuggestion" class="text-slate-300 leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>

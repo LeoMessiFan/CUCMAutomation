@@ -11,6 +11,7 @@ Step logic:
 
 import os
 os.environ["TZ"] = "America/New_York"
+import json
 import time
 time.tzset()
 from datetime import datetime, timezone
@@ -37,6 +38,25 @@ STEPS = [
 ]
 
 
+def _step_label(step_num):
+    if step_num and 1 <= step_num <= len(STEPS):
+        return f"Step {step_num} — {STEPS[step_num - 1]}"
+    return "Unknown step"
+
+
+def _job_params(job):
+    return {
+        "mirror_dn":    job.mirror_dn,
+        "new_dn":       job.new_dn or "",
+        "user_id":      job.user_id_input,
+        "full_name":    job.full_name,
+        "vm_enable":    job.vm_enable,
+        "phone_mac":    job.phone_mac.upper() if job.phone_mac else "",
+        "phone_model":  job.phone_model or "",
+        "jabber_model": job.jabber_model,
+    }
+
+
 def _append_log(job_id, app, message, step=None):
     with app.app_context():
         job = db.session.get(JobHistory, job_id)
@@ -48,7 +68,7 @@ def _append_log(job_id, app, message, step=None):
             db.session.commit()
 
 
-def _fail_job(job_id, app, error):
+def _fail_job(job_id, app, error, params=None):
     with app.app_context():
         job = db.session.get(JobHistory, job_id)
         if job:
@@ -63,6 +83,20 @@ def _fail_job(job_id, app, error):
                 finished = job.finished_at.replace(tzinfo=None)
                 job.duration_seconds = (finished - started).total_seconds()
             db.session.commit()
+
+            try:
+                from core.ai_diagnosis import diagnose_error
+
+                diagnosis = diagnose_error(
+                    step=_step_label(job.current_step),
+                    error_msg=error,
+                    params=params or _job_params(job),
+                )
+                job.ai_diagnosis = json.dumps(diagnosis, ensure_ascii=False)
+                db.session.commit()
+            except Exception as ai_error:
+                db.session.rollback()
+                app.logger.warning("AI diagnosis skipped: %s", ai_error)
 
 
 def _complete_job(job_id, app):
@@ -87,16 +121,7 @@ def run_provisioning_job(job_id, app):
         job = db.session.get(JobHistory, job_id)
         if not job:
             return
-        params = {
-            "mirror_dn":    job.mirror_dn,
-            "new_dn":       job.new_dn or "",
-            "user_id":      job.user_id_input,
-            "full_name":    job.full_name,
-            "vm_enable":    job.vm_enable,
-            "phone_mac":    job.phone_mac.upper() if job.phone_mac else "",
-            "phone_model":  job.phone_model or "",
-            "jabber_model": job.jabber_model,
-        }
+        params = _job_params(job)
 
     _append_log(job_id, app, f"🚀 Starting provisioning for {params['full_name']} ({params['user_id']})")
     _append_log(job_id, app, f"   Mirror DN : {params['mirror_dn']}")
@@ -131,7 +156,7 @@ def run_provisioning_job(job_id, app):
 
         _append_log(job_id, app, "   ✔ Step 1 complete.")
     except Exception as e:
-        _fail_job(job_id, app, f"Step 1 failed — {e}")
+        _fail_job(job_id, app, f"Step 1 failed — {e}", params)
         return
 
     # ── STEP 2 — Skipped if new_dn is blank ──────────────────────────────────
@@ -152,7 +177,7 @@ def run_provisioning_job(job_id, app):
             _append_log(job_id, app, f"   DN '{params['new_dn']}' {result} successfully.")
             _append_log(job_id, app, "   ✔ Step 2 complete.")
         except Exception as e:
-            _fail_job(job_id, app, f"Step 2 failed — {e}")
+            _fail_job(job_id, app, f"Step 2 failed — {e}", params)
             return
     else:
         _append_log(job_id, app, "   ⏭ Skipped — no New DN provided (new user).")
@@ -181,7 +206,7 @@ def run_provisioning_job(job_id, app):
             _append_log(job_id, app, f"   SEP{params['phone_mac']} {result} successfully.")
             _append_log(job_id, app, "   ✔ Step 3 complete.")
         except Exception as e:
-            _fail_job(job_id, app, f"Step 3 failed — {e}")
+            _fail_job(job_id, app, f"Step 3 failed — {e}", params)
             return
     else:
         _append_log(job_id, app, "   ⏭ Skipped — no Phone MAC provided.")
@@ -207,7 +232,7 @@ def run_provisioning_job(job_id, app):
         _append_log(job_id, app, f"   {jm}{params['user_id']} {result} successfully.")
         _append_log(job_id, app, "   ✔ Step 4 complete.")
     except Exception as e:
-        _fail_job(job_id, app, f"Step 4 failed — {e}")
+        _fail_job(job_id, app, f"Step 4 failed — {e}", params)
         return
 
     # ── STEP 5 — Always runs ─────────────────────────────────────────────────
@@ -226,7 +251,7 @@ def run_provisioning_job(job_id, app):
             _append_log(job_id, app, "   ⏭ Primary DN not set — no User DN provided.")
         _append_log(job_id, app, "   ✔ Step 5 complete.")
     except Exception as e:
-        _fail_job(job_id, app, f"Step 5 failed — {e}")
+        _fail_job(job_id, app, f"Step 5 failed — {e}", params)
         return
 
     _complete_job(job_id, app)

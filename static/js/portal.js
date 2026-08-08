@@ -11,6 +11,10 @@ const formErrors     = document.getElementById('formErrors');
 const progressPanel  = document.getElementById('progressPanel');
 const statusBadge    = document.getElementById('statusBadge');
 const logOutput      = document.getElementById('logOutput');
+const aiDiagnosisPanel = document.getElementById('aiDiagnosisPanel');
+const aiSeverityBadge  = document.getElementById('aiSeverityBadge');
+const aiCause          = document.getElementById('aiCause');
+const aiSuggestion     = document.getElementById('aiSuggestion');
 
 const dropZone       = document.getElementById('dropZone');
 const csvFile        = document.getElementById('csvFile');
@@ -22,6 +26,7 @@ const csvErrors      = document.getElementById('csvErrors');
 const csvSuccess     = document.getElementById('csvSuccess');
 
 let pollInterval = null;
+let failedPollsWithoutDiagnosis = 0;
 
 // ── Voicemail toggle ─────────────────────────────────────────────────────────
 document.querySelectorAll('.toggle-option input[type="radio"]').forEach(radio => {
@@ -102,6 +107,8 @@ function showProgress() {
   progressPanel.classList.remove('hidden');
   setStatusBadge('running');
   logOutput.textContent = '';
+  hideAIDiagnosis();
+  failedPollsWithoutDiagnosis = 0;
   for (let i = 1; i <= 5; i++) resetStep(i);
   progressPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -150,6 +157,31 @@ function markStepFailed(n) {
   icon.classList.add('failed');
 }
 
+function hideAIDiagnosis() {
+  if (!aiDiagnosisPanel) return;
+  aiDiagnosisPanel.classList.add('hidden');
+  aiCause.textContent = '';
+  aiSuggestion.textContent = '';
+}
+
+function showAIDiagnosis(diagnosis) {
+  if (!aiDiagnosisPanel || !diagnosis) return;
+
+  const severity = (diagnosis.severity || 'warning').toLowerCase();
+  aiSeverityBadge.className = `diagnosis-badge severity-${severity}`;
+  aiSeverityBadge.textContent = severity.toUpperCase();
+
+  if (diagnosis.raw && !diagnosis.cause) {
+    aiCause.textContent = 'AI returned an unstructured diagnosis.';
+    aiSuggestion.textContent = diagnosis.raw;
+  } else {
+    aiCause.textContent = diagnosis.cause || 'No cause provided.';
+    aiSuggestion.textContent = diagnosis.suggestion || 'No suggestion provided.';
+  }
+
+  aiDiagnosisPanel.classList.remove('hidden');
+}
+
 // ── Polling ───────────────────────────────────────────────────────────────────
 function startPolling(jobId) {
   if (pollInterval) clearInterval(pollInterval);
@@ -177,10 +209,20 @@ async function pollJob(jobId) {
       for (let i = 1; i <= 5; i++) markStepDone(i);
 
     } else if (job.status === 'failed') {
-      clearInterval(pollInterval);
       setStatusBadge('failed');
       setSubmitting(false);
       if (job.current_step > 0) markStepFailed(job.current_step);
+
+      if (job.ai_diagnosis) {
+        clearInterval(pollInterval);
+        failedPollsWithoutDiagnosis = 0;
+        showAIDiagnosis(job.ai_diagnosis);
+      } else if (failedPollsWithoutDiagnosis >= 3) {
+        clearInterval(pollInterval);
+        failedPollsWithoutDiagnosis = 0;
+      } else {
+        failedPollsWithoutDiagnosis += 1;
+      }
     }
 
   } catch (err) {

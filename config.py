@@ -23,6 +23,11 @@ class Config:
     AXL_BINDING  = "{http://www.cisco.com/AXLAPIService/}AXLAPIBinding"
     AXL_TIMEOUT  = 20
 
+    # ── OpenAI ────────────────────────────────────────────
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+    OPENAI_MODEL   = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    OPENAI_TIMEOUT = int(os.environ.get("OPENAI_TIMEOUT", 20))
+
     # ── Upload ─────────────────────────────────────────────
     UPLOAD_FOLDER   = os.path.join(os.path.dirname(__file__), "uploads")
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB

@@ -10,6 +10,7 @@ import click
 import bcrypt
 from flask import Flask
 from flask_login import LoginManager
+from sqlalchemy import inspect, text
 
 from config import Config
 from database.models import db, User
@@ -50,12 +51,45 @@ def create_app() -> Flask:
 app = create_app()
 
 
+def _ensure_schema_upgrades():
+    """Apply tiny SQLite-safe schema upgrades for existing portal.db files."""
+    inspector = inspect(db.engine)
+    if "job_history" not in inspector.get_table_names():
+        return []
+
+    existing_columns = {col["name"] for col in inspector.get_columns("job_history")}
+    applied = []
+
+    if "ai_diagnosis" not in existing_columns:
+        db.session.execute(text("ALTER TABLE job_history ADD COLUMN ai_diagnosis TEXT"))
+        db.session.commit()
+        applied.append("job_history.ai_diagnosis")
+
+    return applied
+
+
 @app.cli.command("init-db")
 def init_db():
     """Create all database tables."""
     with app.app_context():
         db.create_all()
+        applied = _ensure_schema_upgrades()
         click.echo("✓ Database tables created.")
+        for item in applied:
+            click.echo(f"✓ Added column: {item}")
+
+
+@app.cli.command("upgrade-db")
+def upgrade_db():
+    """Apply schema upgrades to an existing database."""
+    with app.app_context():
+        db.create_all()
+        applied = _ensure_schema_upgrades()
+        if applied:
+            for item in applied:
+                click.echo(f"✓ Added column: {item}")
+        else:
+            click.echo("✓ Database schema already up to date.")
 
 
 @app.cli.command("create-admin")
