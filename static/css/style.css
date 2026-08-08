@@ -1,0 +1,163 @@
+/* ── Base ─────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+/* ── Nav Links ───────────────────────────────────────── */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-link:hover  { background: #1e2d45; color: #e2e8f0; }
+.nav-link.active { background: #1a3d8f22; color: #93b4f5; }
+
+/* ── Form Fields ─────────────────────────────────────── */
+.field-label {
+  display: block;
+  font-size: 0.7rem;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.field-input {
+  width: 100%;
+  background: #0f1623;
+  border: 1px solid #1e2d45;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.8125rem;
+  color: #e2e8f0;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.field-input:focus  { border-color: #3b6fd4; }
+.field-input option { background: #161e2e; }
+.field-hint {
+  font-size: 0.7rem;
+  color: #475569;
+  margin-top: 4px;
+}
+
+/* ── Toggle Radio Buttons ────────────────────────────── */
+.toggle-option { cursor: pointer; }
+.toggle-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  border: 1px solid #1e2d45;
+  color: #64748b;
+  background: #0f1623;
+  transition: all 0.15s;
+  user-select: none;
+}
+.toggle-btn.active,
+input[type="radio"]:checked + .toggle-btn {
+  border-color: #3b6fd4;
+  color: #93b4f5;
+  background: #1a3d8f22;
+}
+
+/* ── Flash Messages ──────────────────────────────────── */
+.flash-error   { background: #3b0a0a; border: 1px solid #7f1d1d; color: #fca5a5; }
+.flash-success { background: #052e16; border: 1px solid #14532d; color: #86efac; }
+.flash-info    { background: #0c1a3b; border: 1px solid #1e3a6e; color: #93b4f5; }
+
+/* ── Status Badges ───────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.status-running { background: #1c2a0e; color: #86efac; border: 1px solid #166534; }
+.status-success { background: #052e16; color: #4ade80; border: 1px solid #15803d; }
+.status-failed  { background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; }
+
+.source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+}
+.source-manual { background: #1e2d45; color: #7dd3fc; }
+.source-csv    { background: #1a1a2e; color: #a78bfa; }
+
+/* ── Step Indicators ─────────────────────────────────── */
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+.step-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid #1e2d45;
+  background: #0f1623;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #475569;
+  transition: all 0.3s;
+}
+.step-icon.active  { border-color: #3b6fd4; color: #93b4f5; background: #1a3d8f22; }
+.step-icon.done    { border-color: #15803d; color: #4ade80; background: #052e16; }
+.step-icon.failed  { border-color: #991b1b; color: #f87171; background: #3b0a0a; }
+.step-label { transition: color 0.3s; }
+.step-row.active .step-label  { color: #cbd5e1; }
+.step-row.done .step-label    { color: #4ade80; }
+.step-row.failed .step-label  { color: #f87171; }
+
+/* ── History Table ───────────────────────────────────── */
+.th-cell {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  font-weight: 500;
+}
+.td-cell {
+  padding: 12px 16px;
+  vertical-align: top;
+}
+.history-row:hover { background: #161e2e; }
+
+/* ── Background Grid ─────────────────────────────────── */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(#1e2d45 1px, transparent 1px),
+    linear-gradient(90deg, #1e2d45 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Pulse animation for running status ───────────────── */
+.status-running { animation: pulse-green 2s infinite; }
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── Log scrollbar ───────────────────────────────────── */
+#logOutput::-webkit-scrollbar { width: 4px; }
+#logOutput::-webkit-scrollbar-track { background: transparent; }
+#logOutput::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 4px; }

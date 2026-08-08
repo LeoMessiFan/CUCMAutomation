@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Provision — UC Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-8">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-semibold text-white">New User Provisioning</h2>
+    <p class="text-slate-500 text-sm mt-1">Provision phone and Jabber configuration on Cisco CUCM</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- ── LEFT: Manual Form ── -->
+    <div class="bg-panel border border-border rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="font-mono text-sm text-slate-300 uppercase tracking-wider">Manual Entry</h3>
+        <span class="text-xs text-slate-600 font-mono">Single user</span>
+      </div>
+
+      <form id="provisionForm" class="space-y-4">
+
+        <!-- Template DN — Required -->
+        <div>
+          <label class="field-label">Template DN</label>
+          <input type="text" name="mirror_dn" id="mirror_dn" required
+            placeholder="e.g. 19786007919"
+            class="field-input">
+          <p class="field-hint">Existing DN to copy config from (CSS, Device Pool, Location)</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="field-label">User ID</label>
+            <input type="text" name="user_id" id="user_id" required
+              placeholder="e.g. jsmith"
+              class="field-input">
+            <p class="field-hint">CUCM end user ID</p>
+          </div>
+          <div>
+            <label class="field-label">Full Name</label>
+            <input type="text" name="full_name" id="full_name" required
+              placeholder="e.g. John Smith"
+              class="field-input">
+          </div>
+        </div>
+
+        <!-- User DN — Optional -->
+        <div class="border border-border/50 rounded-xl p-4 space-y-1">
+          <p class="text-xs font-mono text-slate-600 uppercase tracking-wider mb-3">
+            User DN
+            <span class="ml-2 normal-case text-slate-700 font-sans">(Optional — leave blank if user has no existing DN)</span>
+          </p>
+          <label class="field-label">User DN</label>
+          <input type="text" name="new_dn" id="new_dn"
+            placeholder="e.g. 60055"
+            class="field-input">
+          <p class="field-hint">Leave blank = create new DN · Fill in = update existing DN</p>
+        </div>
+
+        <!-- Phone — Optional -->
+        <div class="border border-border/50 rounded-xl p-4 space-y-3">
+          <p class="text-xs font-mono text-slate-600 uppercase tracking-wider">
+            Physical Phone
+            <span class="ml-2 normal-case text-slate-700 font-sans">(Optional — leave blank for Jabber only)</span>
+          </p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="field-label">Phone MAC Address</label>
+              <input type="text" name="phone_mac" id="phone_mac"
+                placeholder="e.g. AABBCC112233"
+                maxlength="17"
+                class="field-input font-mono uppercase">
+              <p class="field-hint">12 hex characters</p>
+            </div>
+            <div>
+              <label class="field-label">Phone Model</label>
+              <input type="text" name="phone_model" id="phone_model"
+                placeholder="e.g. 8851"
+                class="field-input">
+              <p class="field-hint">Required if MAC provided</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="field-label">Jabber Model</label>
+            <select name="jabber_model" id="jabber_model" required class="field-input">
+              <option value="">Select type...</option>
+              <option value="CSF">CSF — Jabber for Windows</option>
+              <option value="TCT">TCT — Jabber for iPhone</option>
+              <option value="BOT">BOT — Jabber for Android</option>
+              <option value="TAB">TAB — Jabber for Tablet</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Voicemail</label>
+            <div class="flex gap-3 mt-2">
+              <label class="toggle-option">
+                <input type="radio" name="vm_enable" value="yes" class="sr-only">
+                <span class="toggle-btn" data-value="yes">Yes</span>
+              </label>
+              <label class="toggle-option">
+                <input type="radio" name="vm_enable" value="no" checked class="sr-only">
+                <span class="toggle-btn active" data-value="no">No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="formErrors" class="hidden flash-error px-4 py-3 rounded-lg text-sm"></div>
+
+        <button type="submit" id="submitBtn"
+          class="w-full bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed
+                 text-white font-medium py-3 rounded-lg text-sm transition-colors mt-2 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span id="submitText">Run Provisioning</span>
+        </button>
+
+      </form>
+    </div>
+
+    <!-- ── RIGHT: CSV Upload + Progress ── -->
+    <div class="flex flex-col gap-6">
+
+      <!-- CSV Section -->
+      <div class="bg-panel border border-border rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-mono text-sm text-slate-300 uppercase tracking-wider">CSV Batch Upload</h3>
+          <a href="/api/download-template"
+             class="text-xs text-brand-500 hover:text-brand-600 transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download Template
+          </a>
+        </div>
+
+        {% if current_user.role == 'admin' %}
+        <!-- Admin: show full upload UI -->
+        <div id="dropZone"
+          class="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer
+                 hover:border-brand-500 hover:bg-brand-700/5 transition-colors">
+          <svg class="w-8 h-8 text-slate-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          <p class="text-sm text-slate-500">Drop a CSV file here, or <span class="text-brand-500">browse</span></p>
+          <p class="text-xs text-slate-700 mt-1">Max 5MB · Must match template columns</p>
+          <input type="file" id="csvFile" accept=".csv" class="hidden">
+        </div>
+
+        <div id="csvFileName" class="hidden mt-3 flex items-center justify-between text-sm">
+          <span class="text-slate-400 font-mono" id="csvFileNameText"></span>
+          <button id="clearCsvBtn" class="text-slate-600 hover:text-slate-400 text-xs">✕ Clear</button>
+        </div>
+
+        <button id="csvUploadBtn" disabled
+          class="mt-4 w-full bg-surface border border-border hover:border-brand-500
+                 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300
+                 font-medium py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          Upload & Run Batch
+        </button>
+
+        <div id="csvErrors" class="hidden mt-3 flash-error px-4 py-3 rounded-lg text-xs"></div>
+        <div id="csvSuccess" class="hidden mt-3 flash-success px-4 py-3 rounded-lg text-xs"></div>
+
+        {% else %}
+        <!-- Regular user: download only -->
+        <div class="border border-border/50 rounded-xl p-5 text-center">
+          <svg class="w-8 h-8 text-slate-700 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          <p class="text-sm text-slate-500">CSV batch upload is restricted to admins.</p>
+          <p class="text-xs text-slate-600 mt-1">Download the template above to prepare your data.</p>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- Progress Panel -->
+      <div id="progressPanel" class="hidden bg-panel border border-border rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-mono text-sm text-slate-300 uppercase tracking-wider">Progress</h3>
+          <span id="statusBadge" class="status-badge status-running">Running</span>
+        </div>
+
+        <div class="space-y-2 mb-4">
+          {% set steps = [
+            (1, "Resolving Mirror Device", ""),
+            (2, "Configuring DN", "optional"),
+            (3, "Provisioning Physical Phone", "optional"),
+            (4, "Provisioning Jabber Client", ""),
+            (5, "Updating End User", ""),
+          ] %}
+          {% for num, label, note in steps %}
+          <div class="step-row" id="step-{{ num }}">
+            <div class="step-icon" id="step-icon-{{ num }}">
+              <span class="step-num font-mono text-xs">{{ num }}</span>
+              <svg class="hidden w-3.5 h-3.5 step-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <span class="step-label text-sm text-slate-500">{{ label }}
+              {% if note %}<span class="text-xs text-slate-700 ml-1">({{ note }})</span>{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="mt-4">
+          <span class="text-xs font-mono text-slate-600 uppercase">Output Log</span>
+          <div id="logOutput"
+            class="mt-2 bg-surface rounded-lg p-3 font-mono text-xs text-slate-400
+                   h-40 overflow-y-auto whitespace-pre-wrap leading-relaxed border border-border">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/portal.js') }}"></script>
+{% endblock %}

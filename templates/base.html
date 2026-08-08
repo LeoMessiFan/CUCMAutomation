@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}UC Automation Portal{% endblock %}</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['IBM Plex Sans', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50:  '#eef4ff',
+              100: '#d9e8ff',
+              200: '#bbcfff',
+              500: '#3b6fd4',
+              600: '#2454b8',
+              700: '#1a3d8f',
+              900: '#0d1f4a',
+            },
+            surface: '#0f1623',
+            panel:   '#161e2e',
+            border:  '#1e2d45',
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="bg-surface text-slate-200 font-sans min-h-screen flex flex-col">
+
+  <!-- ── NAV ── -->
+  {% if current_user.is_authenticated %}
+  <nav class="bg-panel border-b border-border px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-8">
+      <span class="font-mono text-brand-500 font-semibold tracking-widest text-sm uppercase">UC Portal</span>
+      <div class="flex gap-1">
+        <a href="{{ url_for('dashboard.dashboard') }}"
+           class="nav-link {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/>
+          </svg>
+          Provision
+        </a>
+        <a href="{{ url_for('dashboard.history') }}"
+           class="nav-link {% if request.endpoint == 'dashboard.history' %}active{% endif %}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          History
+        </a>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('admin.users') }}"
+           class="nav-link {% if request.blueprint == 'admin' %}active{% endif %}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          Admin
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-slate-500 font-mono">
+        {{ current_user.username }}
+        <span class="ml-1 text-slate-700">({{ current_user.role }})</span>
+      </span>
+      <a href="{{ url_for('auth.logout') }}"
+         class="text-xs text-slate-500 hover:text-slate-300 transition-colors">Logout →</a>
+    </div>
+  </nav>
+  {% endif %}
+
+  <!-- ── FLASH MESSAGES ── -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="px-6 pt-4">
+        {% for category, message in messages %}
+          <div class="flash-{{ category }} px-4 py-3 rounded-lg text-sm mb-2">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── FOOTER ── -->
+  <footer class="border-t border-border px-6 py-3 text-xs text-slate-600 font-mono flex justify-between">
+    <span>UC Automation Portal</span>
+    <span>Internal Use Only</span>
+  </footer>
+
+</body>
+</html>

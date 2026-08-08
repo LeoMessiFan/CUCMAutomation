@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Admin — UC Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-8">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-semibold text-white">User Management</h2>
+    <p class="text-slate-500 text-sm mt-1">Create and manage portal user accounts</p>
+  </div>
+
+  <!-- Create User Form -->
+  <div class="bg-panel border border-border rounded-2xl p-6 mb-6">
+    <h3 class="font-mono text-sm text-slate-300 uppercase tracking-wider mb-5">Create New User</h3>
+
+    <form method="POST" action="{{ url_for('admin.create_user') }}" class="space-y-4">
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="field-label">Username</label>
+          <input type="text" name="username" required
+            placeholder="e.g. jsmith"
+            class="field-input">
+        </div>
+        <div>
+          <label class="field-label">Password</label>
+          <input type="password" name="password" required
+            placeholder="••••••••"
+            class="field-input">
+        </div>
+        <div>
+          <label class="field-label">Role</label>
+          <select name="role" class="field-input">
+            <option value="user">User — Provision & History</option>
+            <option value="admin">Admin — Full Access</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit"
+        class="bg-brand-600 hover:bg-brand-500 text-white font-medium px-6 py-2.5
+               rounded-lg text-sm transition-colors">
+        Create User
+      </button>
+    </form>
+  </div>
+
+  <!-- User List -->
+  <div class="bg-panel border border-border rounded-2xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="th-cell">Username</th>
+          <th class="th-cell">Role</th>
+          <th class="th-cell">Created</th>
+          <th class="th-cell">Last Login</th>
+          <th class="th-cell">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr class="border-b border-border/50 {% if user.id == current_user.id %}bg-brand-700/10{% endif %}">
+          <td class="td-cell font-mono text-slate-300">
+            {{ user.username }}
+            {% if user.id == current_user.id %}
+              <span class="ml-2 text-xs text-brand-500">(you)</span>
+            {% endif %}
+          </td>
+          <td class="td-cell">
+            <span class="source-badge {% if user.role == 'admin' %}source-manual{% else %}source-csv{% endif %}">
+              {{ user.role }}
+            </span>
+          </td>
+          <td class="td-cell font-mono text-xs text-slate-500">
+            {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '—' }}
+          </td>
+          <td class="td-cell font-mono text-xs text-slate-500">
+            {{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}
+          </td>
+          <td class="td-cell">
+            <div class="flex items-center gap-2">
+
+              <!-- Reset Password -->
+              <button onclick="toggleReset({{ user.id }})"
+                class="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                Reset Password
+              </button>
+
+              <!-- Delete — not for own account -->
+              {% if user.id != current_user.id %}
+              <form method="POST"
+                action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                onsubmit="return confirm('Delete user {{ user.username }}? This cannot be undone.')">
+                <button type="submit"
+                  class="text-xs text-red-600 hover:text-red-400 transition-colors">
+                  Delete
+                </button>
+              </form>
+              {% endif %}
+
+            </div>
+
+            <!-- Reset Password Form (hidden by default) -->
+            <div id="reset-{{ user.id }}" class="hidden mt-2">
+              <form method="POST"
+                action="{{ url_for('admin.reset_password', user_id=user.id) }}"
+                class="flex gap-2">
+                <input type="password" name="new_password" required
+                  placeholder="New password"
+                  class="field-input text-xs py-1.5 px-3 w-40">
+                <button type="submit"
+                  class="text-xs bg-brand-600 hover:bg-brand-500 text-white
+                         px-3 py-1.5 rounded-lg transition-colors">
+                  Save
+                </button>
+                <button type="button" onclick="toggleReset({{ user.id }})"
+                  class="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+                  Cancel
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-slate-600 mt-4 font-mono">{{ users|length }} user(s) total</p>
+
+</div>
+
+<script>
+function toggleReset(userId) {
+  const el = document.getElementById('reset-' + userId);
+  el.classList.toggle('hidden');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,34 @@
+# Environment & Secrets
+.env
+
+# Database
+database/portal.db
+database/*.db-journal
+zeep_cache.db
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Uploads (temporary)
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — UC Automation Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['IBM Plex Sans', 'sans-serif'],
+            mono: ['IBM Plex Mono', 'monospace'],
+          },
+          colors: {
+            brand:   { 500: '#3b6fd4', 600: '#2454b8', 700: '#1a3d8f' },
+            surface: '#0f1623',
+            panel:   '#161e2e',
+            border:  '#1e2d45',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="bg-surface text-slate-200 font-sans min-h-screen flex items-center justify-center">
+
+  <!-- Background grid -->
+  <div class="fixed inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+
+  <div class="relative w-full max-w-sm mx-4">
+
+    <!-- Logo / Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand-700 mb-4">
+        <svg class="w-7 h-7 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        </svg>
+      </div>
+      <h1 class="font-mono text-xl font-semibold text-white tracking-wide">UC Automation Portal</h1>
+      <p class="text-slate-500 text-sm mt-1">Cisco CUCM Provisioning</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-panel border border-border rounded-2xl p-8 shadow-2xl">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-{{ category }} px-4 py-3 rounded-lg text-sm mb-4">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-5">
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 uppercase tracking-wider mb-2">
+            Username
+          </label>
+          <input type="text" name="username" required autocomplete="username"
+            class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm
+                   text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500
+                   transition-colors"
+            placeholder="admin">
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 uppercase tracking-wider mb-2">
+            Password
+          </label>
+          <input type="password" name="password" required autocomplete="current-password"
+            class="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm
+                   text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500
+                   transition-colors"
+            placeholder="••••••••">
+        </div>
+
+        <button type="submit"
+          class="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-3 rounded-lg
+                 text-sm transition-colors mt-2">
+          Sign In →
+        </button>
+
+      </form>
+    </div>
+
+    <p class="text-center text-xs text-slate-700 mt-6 font-mono">Internal use only</p>
+  </div>
+
+</body>
+</html>
