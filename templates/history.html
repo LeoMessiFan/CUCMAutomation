@@ -81,6 +81,31 @@
             </div>
             <pre class="bg-surface border border-border rounded-lg p-4 text-xs font-mono
                         text-slate-400 overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto">{{ job.log_output or 'No log output.' }}</pre>
+            {% set diagnosis = job.ai_diagnosis_data %}
+            {% if diagnosis %}
+            <div class="mt-4 border border-border rounded-lg bg-panel p-4">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-mono text-slate-600 uppercase">AI Diagnosis</span>
+                <span class="diagnosis-badge severity-{{ diagnosis.get('severity', 'warning') }}">
+                  {{ diagnosis.get('severity', 'warning') }}
+                </span>
+              </div>
+              {% if diagnosis.get('raw') and not diagnosis.get('cause') %}
+                <p class="text-sm text-slate-300 whitespace-pre-wrap">{{ diagnosis.get('raw') }}</p>
+              {% else %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p class="text-xs font-mono text-slate-600 uppercase mb-1">Likely Cause</p>
+                    <p class="text-slate-300 leading-relaxed">{{ diagnosis.get('cause', 'No cause provided.') }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs font-mono text-slate-600 uppercase mb-1">Suggested Fix</p>
+                    <p class="text-slate-300 leading-relaxed">{{ diagnosis.get('suggestion', 'No suggestion provided.') }}</p>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}

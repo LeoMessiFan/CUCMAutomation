@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
@@ -60,12 +61,23 @@ class JobHistory(db.Model):
     current_step    = db.Column(db.Integer,     nullable=False, default=0)
     log_output      = db.Column(db.Text,        nullable=True)
     error_message   = db.Column(db.String(500), nullable=True)
+    ai_diagnosis    = db.Column(db.Text,        nullable=True)
 
     # Timing
     started_at       = db.Column(db.DateTime, nullable=False,
                                  default=lambda: datetime.now(timezone.utc))
     finished_at      = db.Column(db.DateTime, nullable=True)
     duration_seconds = db.Column(db.Float,    nullable=True)
+
+    @property
+    def ai_diagnosis_data(self):
+        if not self.ai_diagnosis:
+            return None
+        try:
+            data = json.loads(self.ai_diagnosis)
+            return data if isinstance(data, dict) else {"raw": self.ai_diagnosis}
+        except (TypeError, json.JSONDecodeError):
+            return {"raw": self.ai_diagnosis}
 
     def to_dict(self):
         return {
@@ -83,6 +95,7 @@ class JobHistory(db.Model):
             "current_step":   self.current_step,
             "log_output":     self.log_output or "",
             "error_message":  self.error_message or "",
+            "ai_diagnosis":   self.ai_diagnosis_data,
             "started_at":     _to_local(self.started_at),
             "finished_at":    _to_local(self.finished_at),
             "duration_seconds": self.duration_seconds,
