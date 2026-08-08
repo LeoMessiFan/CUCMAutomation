@@ -217,7 +217,7 @@ async function pollJob(jobId) {
         clearInterval(pollInterval);
         failedPollsWithoutDiagnosis = 0;
         showAIDiagnosis(job.ai_diagnosis);
-      } else if (failedPollsWithoutDiagnosis >= 15) {
+      } else if (failedPollsWithoutDiagnosis >= 3) {
         clearInterval(pollInterval);
         failedPollsWithoutDiagnosis = 0;
       } else {
