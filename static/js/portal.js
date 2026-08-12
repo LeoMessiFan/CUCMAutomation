@@ -168,7 +168,7 @@ function showAIDiagnosis(diagnosis) {
   if (!aiDiagnosisPanel || !diagnosis) return;
 
   const severity = (diagnosis.severity || 'warning').toLowerCase();
-  aiSeverityBadge.className = `diagnosis-badge severity-${severity}`;
+  aiSeverityBadge.className = `status-badge status-${severity === "critical" || severity === "error" ? "failed" : severity === "warning" ? "running" : "success"}`;
   aiSeverityBadge.textContent = severity.toUpperCase();
 
   if (diagnosis.raw && !diagnosis.cause) {
@@ -217,7 +217,7 @@ async function pollJob(jobId) {
         clearInterval(pollInterval);
         failedPollsWithoutDiagnosis = 0;
         showAIDiagnosis(job.ai_diagnosis);
-      } else if (failedPollsWithoutDiagnosis >= 3) {
+      } else if (failedPollsWithoutDiagnosis >= 10) {
         clearInterval(pollInterval);
         failedPollsWithoutDiagnosis = 0;
       } else {

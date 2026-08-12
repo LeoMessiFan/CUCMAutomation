@@ -1,39 +1,84 @@
 """
 core/ai_client.py
 ─────────────────
-Small OpenAI API wrapper for supplementary AI features.
+AI client wrapper that supports two backends:
+  1. Ollama (local) — used when OPENAI_API_KEY is not set (default for internal deployment)
+  2. OpenAI API     — used when OPENAI_API_KEY is present in .env
+
+Ollama endpoint: http://127.0.0.1:11434 (local, no internet required)
 """
 
-from openai import OpenAI
-from typing import Optional
-
+import json
+import requests
 from config import Config
 
 
-class AIClientError(RuntimeError):
-    """Raised when the OpenAI call cannot be completed."""
-
-
-def call_ai(prompt: str, system: str, model: Optional[str] = None) -> str:
+def call_ai(prompt: str, system: str = "") -> str:
     """
-    Call OpenAI and return the response text.
+    Send a prompt to the configured AI backend and return the response text.
 
-    The SDK reads OPENAI_API_KEY from the environment by default, but we pass the
-    configured value explicitly so .env loading remains centralized in config.py.
+    Args:
+        prompt: The user prompt / question
+        system: Optional system role instruction
+
+    Returns:
+        AI response as a string
     """
-    if not Config.OPENAI_API_KEY:
-        raise AIClientError("OPENAI_API_KEY is not configured.")
+    if Config.OPENAI_API_KEY:
+        return _call_openai(prompt, system)
+    else:
+        return _call_ollama(prompt, system)
 
+
+def _call_openai(prompt: str, system: str) -> str:
+    """Call OpenAI API (requires OPENAI_API_KEY and internet access)."""
     try:
-        client = OpenAI(api_key=Config.OPENAI_API_KEY, timeout=Config.OPENAI_TIMEOUT)
-        response = client.chat.completions.create(
-            model=model or Config.OPENAI_MODEL,
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ],
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=Config.OPENAI_API_KEY,
+            timeout=Config.OPENAI_TIMEOUT,
         )
-        return (response.choices[0].message.content or "").strip()
-    except Exception as exc:
-        raise AIClientError(f"OpenAI request failed: {exc}") from exc
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        response = client.chat.completions.create(
+            model=Config.OPENAI_MODEL,
+            messages=messages,
+            temperature=0.2,
+        )
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        raise RuntimeError(f"OpenAI request failed: {e}")
+
+
+def _call_ollama(prompt: str, system: str) -> str:
+    """Call local Ollama instance (no internet required)."""
+    try:
+        full_prompt = f"{system}\n\n{prompt}" if system else prompt
+
+        response = requests.post(
+            f"{Config.OLLAMA_BASE_URL}/api/generate",
+            json={
+                "model": Config.OLLAMA_MODEL,
+                "prompt": full_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.2,
+                    "num_predict": 512,
+                }
+            },
+            timeout=30
+        )
+        response.raise_for_status()
+        result = response.json()
+        return result.get("response", "").strip()
+
+    except requests.exceptions.ConnectionError:
+        raise RuntimeError("Cannot connect to Ollama. Make sure 'ollama serve' is running.")
+    except requests.exceptions.Timeout:
+        raise RuntimeError("Ollama request timed out.")
+    except Exception as e:
+        raise RuntimeError(f"Ollama request failed: {e}")
